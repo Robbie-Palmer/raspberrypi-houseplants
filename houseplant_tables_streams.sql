@@ -4,15 +4,19 @@ CREATE TABLE houseplant_metadata (
   id STRING PRIMARY KEY
 ) WITH (
   kafka_topic='houseplant-metadata', 
-  value_format='AVRO'
+  value_format='AVRO',
+  partitions=4
 );
 
 
 // STEP 1.B Create readings stream
 
-CREATE STREAM houseplant_readings WITH (
+CREATE STREAM houseplant_readings (
+  id STRING KEY
+) WITH (
   kafka_topic='houseplant-readings',
-  value_format='AVRO'
+  value_format='AVRO',
+  partitions=4
 );
 
 
