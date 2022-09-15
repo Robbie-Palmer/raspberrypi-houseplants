@@ -7,29 +7,31 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 
 import avro_helper
 
-
-# set up configs
-conf = avro_helper.read_ccloud_config("./librdkafka.config")
-schema_registry_conf = {
-        'url': conf['schema.registry.url'],
-        'basic.auth.user.info': conf['basic.auth.user.info']
-}
+# fetches the configs from the available file
+CONFIGS_FILE = './configs/configs.yaml'
+CONFIGS = {}
+with open(CONFIGS_FILE, 'r') as config_file:
+    CONFIGS = yaml.load(config_file, Loader=yaml.CLoader)
 
 # set up schema registry
-schema_registry_client = SchemaRegistryClient(schema_registry_conf)
+sr_conf = {
+        'url': CONFIGS['schema-registry']['schema.registry.url'],
+        'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
+}
+schema_registry_client = SchemaRegistryClient(sr_conf)
 
+# set up Kafka producer
 houseplant_avro_serializer = AvroSerializer(
         schema_registry_client = schema_registry_client,
         schema_str = avro_helper.houseplant_schema,
         to_dict = avro_helper.Houseplant.houseplant_to_dict
 )
 
-# set up Kafka producer
-producer_conf = avro_helper.pop_schema_registry_params_from_config(conf)
-producer_conf['value.serializer'] = houseplant_avro_serializer
+producer_conf = CONFIGS['kafka']
+producer_conf['value.serializer'] = reading_avro_serializer
 producer = SerializingProducer(producer_conf)
 
-topic = 'houseplant_metadata'
+topic = 'houseplant-metadata'
 
 # existing plants
 plants = {
