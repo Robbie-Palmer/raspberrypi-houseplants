@@ -5,7 +5,7 @@ from uuid import uuid4
 
 houseplant_schema = """
 { 
-    "name": "houseplant",
+    "name": "metadata",
     "namespace": "com.houseplants",
     "type": "record",
     "doc": "Houseplant metadata.",
@@ -80,7 +80,7 @@ class Houseplant(object):
         self.moisture_high    = moisture_high
 
     @staticmethod
-    def dict_to_houseplant(obj, ctx):
+    def dict_to_houseplant(obj):
         return Houseplant(
                 obj['plant_id'],
                 obj['scientific_name'],
@@ -116,15 +116,9 @@ reading_schema = """
     "doc": "Houseplant reading taken from meters.",
     "fields": [
         {
-            "doc": "Unique plant indentification number.",
+            "doc": "Unique plant identification number.",
             "name": "plant_id",
             "type": "int"
-        },
-        {
-            "doc": "Timestamp at which the reading was taken",
-            "logicalType": "timestamp-millis",
-            "name": "timestamp",
-            "type": "long"
         },
         {
             "doc": "Soil moisture as a percentage.",
@@ -144,23 +138,20 @@ class Reading(object):
     """Reading stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
-        "plant_id",
-        "timestamp", 
+        "plant_id", 
         "moisture",
         "temperature"
     ]
     
-    def __init__(self, plant_id, timestamp, moisture, temperature):
+    def __init__(self, plant_id, moisture, temperature):
         self.plant_id    = plant_id
-        self.timestamp   = timestamp
         self.moisture    = moisture
         self.temperature = temperature
 
     @staticmethod
-    def dict_to_reading(obj, ctx):
-        return reading(
+    def dict_to_reading(obj):
+        return Reading(
                 obj['plant_id'],
-                obj['timestamp'],
                 obj['moisture'],    
                 obj['temperature'],    
             )
@@ -172,9 +163,60 @@ class Reading(object):
     def to_dict(self):
         return dict(
                     plant_id    = self.plant_id,
-                    timestamp   = self.timestamp,
                     moisture    = self.moisture,
                     temperature = self.temperature
+                )
+
+
+mapping_schema = """
+{
+    "name": "mapping",
+    "namespace": "com.houseplants",
+    "type": "record",
+    "doc": "Sensor-houseplant mapping.",
+    "fields": [
+        {
+            "doc": "Hardcoded ID of the physical soil sensor.",
+            "name": "sensor_id",
+            "type": "string"
+        },
+        {
+            "doc": "Plant identification number.",
+            "name": "plant_id",
+            "type": "int"
+        }
+    ]
+}
+"""
+
+
+class Mapping(object):
+    """Mapping stores the deserialized Avro record for the Kafka key."""
+    # Use __slots__ to explicitly declare all data members.
+    __slots__ = [
+        "sensor_id", 
+        "plant_id"
+    ]
+    
+    def __init__(self, sensor_id, plant_id):
+        self.sensor_id = sensor_id
+        self.plant_id  = plant_id
+
+    @staticmethod
+    def dict_to_mapping(obj):
+        return Mapping(
+                obj['sensor_id'],
+                obj['plant_id']   
+            )
+
+    @staticmethod
+    def mapping_to_dict(mapping, ctx):
+        return Mapping.to_dict(mapping)
+
+    def to_dict(self):
+        return dict(
+                    sensor_id = self.sensor_id,
+                    plant_id  = self.plant_id
                 )
 
 
