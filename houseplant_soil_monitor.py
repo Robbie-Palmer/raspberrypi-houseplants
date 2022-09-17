@@ -1,10 +1,12 @@
 import time
 import json
 import logging
+import yaml
 
 from board import SCL, SDA
 import busio
 from confluent_kafka import SerializingProducer, DeserializingConsumer
+from confluent_kafka.error import SerializationError
 from confluent_kafka.serialization import StringSerializer, StringDeserializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
@@ -47,19 +49,19 @@ READINGS_SERIALIZER = AvroSerializer(
         to_dict = avro_helper.Reading.reading_to_dict
 )
 
-PRODUCER_CONF = CONFIGS['kafka']
+PRODUCER_CONF = CONFIGS['kafka'].copy()
 PRODUCER_CONF['value.serializer'] = READINGS_SERIALIZER
 PRODUCER = SerializingProducer(PRODUCER_CONF)
 
 # set up Kafka Consumer details
-MAPPINGS_DESERIALZIER = AvroDeserializer(
+MAPPINGS_DESERIALIZER = AvroDeserializer(
         schema_registry_client = SR_CLIENT,
         schema_str = avro_helper.mapping_schema,
-        to_dict = avro_helper.Mapping.mapping_to_dict
+        from_dict = avro_helper.Mapping.dict_to_mapping
 )
 
-CONSUMER_CONF = CONFIGS['kafka']
-CONSUMER_CONF['value.deserializer'] = MAPPINGS_DESERIALZIER
+CONSUMER_CONF = CONFIGS['kafka'].copy()
+CONSUMER_CONF['value.deserializer'] = MAPPINGS_DESERIALIZER
 CONSUMER_CONF['group.id'] = 'sensor-mapping-consumer'
 CONSUMER_CONF['auto.offset.reset'] = 'earliest'
 CONSUMER_CONF['enable.auto.commit'] = 'false'
@@ -75,14 +77,14 @@ def consume_sensor_mappings():
             msg = CONSUMER.poll(1.0)
 
             # if no more messages in mapping topic, then move on
-            if msg is None:
-                break
-            else:
-                sensor_id = msg.key()
-                plant_id = msg.value().get('plant_id')
+            if msg is None and len(PLANT_ADDRESSES) != 0:
+                return
+            elif msg is not None:
+                sensor_id = msg.value().sensor_id
+                plant_id = msg.value().plant_id
 
                 PLANT_ADDRESSES[sensor_id] = plant_id
-        except SerializerError as e:
+        except SerializationError as e:
             # Report malformed record, discard results, continue polling
             logger.error("Message deserialization failed {}".format(e))
             pass
@@ -92,9 +94,9 @@ def consume_sensor_mappings():
 
 def produce_sensor_readings():
     i2c_bus = busio.I2C(SCL, SDA)
-    for k,v in PLANT_ADDRESSES.items():
+    for address,plant_id in PLANT_ADDRESSES.items():
         try:
-            ss = Seesaw(i2c_bus, addr=v)
+            ss = Seesaw(i2c_bus, addr=int(address, 16))
 
             # read moisture 
             touch = ss.moisture_read()
@@ -110,18 +112,18 @@ def produce_sensor_readings():
         
             # send data to Kafka
             ts = int(time.time())
-            reading = avro_helper.Reading(int(k), ts, round(touch_percent, 3), round(temp, 3))
+            reading = avro_helper.Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
 
-            logger.info("Publishing message: key, value: ({},{})".format(str(k), reading))
-            PRODUCER.produce(READINGS_TOPIC, key=k, value=reading) 
+            logger.info("Publishing message: key, value: ({},{})".format(str(plant_id), reading))
+            PRODUCER.produce(READINGS_TOPIC, key=plant_id, value=reading, timestamp=ts) 
             PRODUCER.poll()
 
         except Exception as e:
-            logger.error("Other exception ".format(str(e)))
+            logger.error("Other exception {}".format(str(e)))
 
 
 while True:
     consume_sensor_mappings()
     produce_sensor_readings()
 
-    time.sleep(15)
+    time.sleep(30)

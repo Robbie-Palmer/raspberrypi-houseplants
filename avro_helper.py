@@ -1,8 +1,3 @@
-import argparse, sys
-from confluent_kafka import avro, KafkaError
-from confluent_kafka.admin import AdminClient, NewTopic
-from uuid import uuid4
-
 houseplant_schema = """
 { 
     "name": "metadata",
@@ -80,7 +75,7 @@ class Houseplant(object):
         self.moisture_high    = moisture_high
 
     @staticmethod
-    def dict_to_houseplant(obj):
+    def dict_to_houseplant(obj, ctx=None):
         return Houseplant(
                 obj['plant_id'],
                 obj['scientific_name'],
@@ -93,8 +88,8 @@ class Houseplant(object):
             )
 
     @staticmethod
-    def houseplant_to_dict(houseplant, ctx):
-        return Houseplant.to_dict(houseplant)
+    def houseplant_to_dict(houseplant, ctx=None):
+        return houseplant.to_dict()
 
     def to_dict(self):
         return dict(
@@ -149,7 +144,7 @@ class Reading(object):
         self.temperature = temperature
 
     @staticmethod
-    def dict_to_reading(obj):
+    def dict_to_reading(obj, ctx=None):
         return Reading(
                 obj['plant_id'],
                 obj['moisture'],    
@@ -157,8 +152,8 @@ class Reading(object):
             )
 
     @staticmethod
-    def reading_to_dict(reading, ctx):
-        return Reading.to_dict(reading)
+    def reading_to_dict(reading, ctx=None):
+        return reading.to_dict()
 
     def to_dict(self):
         return dict(
@@ -203,15 +198,15 @@ class Mapping(object):
         self.plant_id  = plant_id
 
     @staticmethod
-    def dict_to_mapping(obj):
+    def dict_to_mapping(obj, ctx=None):
         return Mapping(
                 obj['sensor_id'],
                 obj['plant_id']   
             )
 
     @staticmethod
-    def mapping_to_dict(mapping, ctx):
-        return Mapping.to_dict(mapping)
+    def mapping_to_dict(mapping, ctx=None):
+        return mapping.to_dict()
 
     def to_dict(self):
         return dict(
@@ -219,24 +214,3 @@ class Mapping(object):
                     plant_id  = self.plant_id
                 )
 
-
-
-def read_ccloud_config(config_file):
-    """Read Confluent Cloud configuration for librdkafka clients"""
-    conf = {}
-    with open(config_file) as fh:
-        for line in fh:
-            line = line.strip()
-            if len(line) != 0 and line[0] != "#":
-                parameter, value = line.strip().split('=', 1)
-                conf[parameter] = value.strip()
-    return conf
-
-
-def pop_schema_registry_params_from_config(conf):
-    """Remove potential Schema Registry related configurations from dictionary"""
-    conf.pop('schema.registry.url', None)
-    conf.pop('basic.auth.user.info', None)
-    conf.pop('basic.auth.credentials.source', None)
-    
-    return conf

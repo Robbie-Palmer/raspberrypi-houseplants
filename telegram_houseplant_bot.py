@@ -258,7 +258,7 @@ async def commit_plant_command(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         else:
             await update.message.reply_text(
-                "Your metadata was not sent; please use /update to re-try."
+                "Your metadata was not sent; please use /update_plant to re-try."
             )
 
         return ConversationHandler.END
@@ -350,7 +350,7 @@ async def commit_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
             )
         else:
             await update.message.reply_text(
-                "Your mapping entry was not sent; please use /update to re-try."
+                "Your mapping entry was not sent; please use /update_mapping to re-try."
             )
 
         return ConversationHandler.END
