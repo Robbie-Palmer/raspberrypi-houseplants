@@ -269,6 +269,42 @@ async def commit_plant_command(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
 
+def send_metadata(metadata): 
+    # 1. set up schema registry
+    sr_conf = {
+        'url': CONFIGS['schema-registry']['schema.registry.url'],
+        'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
+    }
+    schema_registry_client = SchemaRegistryClient(sr_conf)
+
+    # 2. set up metadata producer
+    avro_serializer = AvroSerializer(
+            schema_registry_client = schema_registry_client,
+            schema_str = avro_helper.houseplant_schema,
+            to_dict = avro_helper.Houseplant.houseplant_to_dict
+    )
+
+    producer_conf = CONFIGS['kafka']
+    producer_conf['value.serializer'] = avro_serializer
+    producer = SerializingProducer(producer_conf)
+
+    # 3. send metadata message
+    try:
+        value = avro_helper.Houseplant.dict_to_houseplant(metadata)
+
+        k = str(metadata.get('plant_id'))
+        logger.info('Publishing metadata message for key ' + str(k))
+        producer.produce(METADATA_TOPIC, key=k, value=value) 
+        producer.poll()
+        producer.flush()
+    except Exception as e:
+        print(str(e))
+        logger.error('Got exception ' + str(e))
+        return 1
+
+    return 0
+
+
 ####################################################################################
 #                                                                                  #
 #                             UPDATE MAPPING HANDLERS                              #
@@ -361,71 +397,6 @@ async def commit_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
         return ConversationHandler.END
 
 
-async def plants_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        f"Fetching houseplant metadata from Kafka..."
-    )
-
-
-async def latest_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        f"Fetching latest readings from Kafka..."
-    )
-
-
-async def mappings_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        f"Fetching latest sensor-plant mappings from Kafka..."
-    )
-
-
-async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancels and ends the conversation."""
-    context.user_data.clear()
-
-    await update.message.reply_text(
-        "Cancelled metadata update."
-    )
-
-    return ConversationHandler.END
-
-
-def send_metadata(metadata): 
-    # 1. set up schema registry
-    sr_conf = {
-        'url': CONFIGS['schema-registry']['schema.registry.url'],
-        'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
-    }
-    schema_registry_client = SchemaRegistryClient(sr_conf)
-
-    # 2. set up metadata producer
-    avro_serializer = AvroSerializer(
-            schema_registry_client = schema_registry_client,
-            schema_str = avro_helper.houseplant_schema,
-            to_dict = avro_helper.Houseplant.houseplant_to_dict
-    )
-
-    producer_conf = CONFIGS['kafka']
-    producer_conf['value.serializer'] = avro_serializer
-    producer = SerializingProducer(producer_conf)
-
-    # 3. send metadata message
-    try:
-        value = avro_helper.Houseplant.dict_to_houseplant(metadata)
-
-        k = str(metadata.get('plant_id'))
-        logger.info('Publishing metadata message for key ' + str(k))
-        producer.produce(METADATA_TOPIC, key=k, value=value) 
-        producer.poll()
-        producer.flush()
-    except Exception as e:
-        print(str(e))
-        logger.error('Got exception ' + str(e))
-        return 1
-
-    return 0
-
-
 def send_mapping(mapping): 
     # 1. set up schema registry
     sr_conf = {
@@ -462,15 +433,52 @@ def send_mapping(mapping):
     return 0
 
 
+####################################################################################
+#                                                                                  #
+#                                 OTHER HANDLERS                                   #
+#                                                                                  #
+####################################################################################
+
+async def plants_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        f"Fetching houseplant metadata from Kafka..."
+    )
+
+
+async def latest_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        f"Fetching latest readings from Kafka..."
+    )
+
+
+async def mappings_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        f"Fetching latest sensor-plant mappings from Kafka..."
+    )
+
+
+async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Cancels and ends the conversation."""
+    context.user_data.clear()
+
+    await update.message.reply_text(
+        "Cancelled metadata update."
+    )
+
+    return ConversationHandler.END
+
+
 async def post_init(application: Application) -> None:
     await application.bot.set_my_commands([
-        ('latest', 'See latest readings'),
-        ('plants', 'See all plants'),
+        #('latest', 'See latest readings'),
+        #('plants', 'See all plants'),
         ('update_plant', 'Update plant metadata'),
-        ('mappings', 'See sensor mappings'),
+        #('mappings', 'See sensor mappings'),
         ('update_mapping', 'Update sensor-plant mapping')
         ])
 
+
+####################################################################################
 
 def main() -> None:
     # create the application and pass in bot token
@@ -542,9 +550,9 @@ def main() -> None:
     # add handlers
     application.add_handler(update_plant_handler)
     application.add_handler(update_mapping_handler)
-    application.add_handler(CommandHandler("plants", plants_command))
-    application.add_handler(CommandHandler("mappings", mappings_command))
-    application.add_handler(CommandHandler("latest", latest_command))
+    #application.add_handler(CommandHandler("plants", plants_command))
+    #application.add_handler(CommandHandler("mappings", mappings_command))
+    #application.add_handler(CommandHandler("latest", latest_command))
 
     # run the bot application
     application.run_polling()
