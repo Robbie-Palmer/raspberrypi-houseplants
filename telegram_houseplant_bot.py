@@ -1,14 +1,4 @@
 #!/usr/bin/env python
-# pylint: disable=unused-argument, wrong-import-position
-# This program is dedicated to the public domain under the CC0 license.
-
-"""
-Simple Bot to reply to Telegram messages.
-
-First, a few handler functions are defined. Then, those functions are passed to
-the Application and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-"""
 
 import logging
 import yaml
@@ -253,7 +243,7 @@ async def commit_plant_command(update: Update, context: ContextTypes.DEFAULT_TYP
         context.user_data['plant'].clear()
         if result == 0:
             await update.message.reply_text(
-                "You've confirmed your metadata entry, and it has been udpated. "
+                "You've confirmed your metadata entry, and it has been updated. "
                 "Use /results see the results."
             )
         else:
@@ -381,7 +371,7 @@ async def commit_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
 
         if result == 0:
             await update.message.reply_text(
-                "You've confirmed your mapping entry, and it has been udpated. "
+                "You've confirmed your mapping entry, and it has been updated. "
                 "Use /results see the results."
             )
         else:
