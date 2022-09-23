@@ -1,53 +1,9 @@
-houseplant_schema = """
-{ 
-    "name": "metadata",
-    "namespace": "com.houseplants",
-    "type": "record",
-    "doc": "Houseplant metadata.",
-    "fields": [
-        {
-            "doc": "Unique plant identification number.",
-            "name": "plant_id",
-            "type": "int"
-        },
-        {
-            "doc": "Scientific name of the plant.",
-            "name": "scientific_name",
-            "type": "string"
-        },
-        {
-            "doc": "The common name of the plant.",
-            "name": "common_name",
-            "type": "string"
-        },
-        {
-            "doc": "The given name of the plant.",
-            "name": "given_name",
-            "type": "string"
-        },
-        {
-            "doc": "Lowest temperature of the plant.",
-            "name": "temperature_low",
-            "type": "float"
-        },
-        {
-            "doc": "Highest temperature of the plant.",
-            "name": "temperature_high",
-            "type": "float"
-        },
-        {
-            "doc": "Lowest moisture of the plant.",
-            "name": "moisture_low",
-            "type": "float"
-        },
-        {
-            "doc": "Highest moisture of the plant.",
-            "name": "moisture_high",
-            "type": "float"
-        }
-    ]
-}
-"""
+def get_schema(file):
+    with open(file, 'r') as handle:
+        return handle.read()
+
+
+houseplant_schema = get_schema('houseplant.avsc')
 
 class Houseplant(object):
     """Houseplant stores the deserialized Avro record for the Kafka key."""
@@ -103,31 +59,7 @@ class Houseplant(object):
                     moisture_high    = self.moisture_high
                 )
 
-reading_schema = """
-{
-    "name": "reading",
-    "namespace": "com.houseplants",
-    "type": "record",
-    "doc": "Houseplant reading taken from meters.",
-    "fields": [
-        {
-            "doc": "Unique plant identification number.",
-            "name": "plant_id",
-            "type": "int"
-        },
-        {
-            "doc": "Soil moisture as a percentage.",
-            "name": "moisture",
-            "type": "float"
-        },
-        {
-            "doc": "Temperature in degrees C of the soil of this plant.",
-            "name": "temperature",
-            "type": "float"
-        }
-    ]
-}
-"""
+reading_schema = get_schema('reading.avsc')
 
 class Reading(object):
     """Reading stores the deserialized Avro record for the Kafka key."""
@@ -163,26 +95,7 @@ class Reading(object):
                 )
 
 
-mapping_schema = """
-{
-    "name": "mapping",
-    "namespace": "com.houseplants",
-    "type": "record",
-    "doc": "Sensor-houseplant mapping.",
-    "fields": [
-        {
-            "doc": "Hardcoded ID of the physical soil sensor.",
-            "name": "sensor_id",
-            "type": "string"
-        },
-        {
-            "doc": "Plant identification number.",
-            "name": "plant_id",
-            "type": "int"
-        }
-    ]
-}
-"""
+mapping_schema = = get_schema('mapping.avsc')
 
 
 class Mapping(object):
