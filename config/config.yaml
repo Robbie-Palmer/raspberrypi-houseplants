@@ -1,0 +1,24 @@
+kafka:
+  bootstrap.servers: "pkc-6ojv2.us-west4.gcp.confluent.cloud:9092"
+  security.protocol: "SASL_SSL"
+  #ssl.ca.location: "/etc/ssl/certs/ca-certificates.crt"
+  ssl.ca.location: "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/certifi/cacert.pem"
+  sasl.mechanisms: "PLAIN"
+  sasl.username: "JXRT33HBADO53YJ4"
+  sasl.password: "HmtbFE2HwQnM3Gn8mFooLAkYc3QqRUO+T2T3h5QlEdD9eyYoouC0+VzFpwWqfK97"
+  session.timeout.ms: 45000
+
+# Confluent Cloud Schema Registry
+schema-registry:
+  url: "https://psrc-2225o.us-central1.gcp.confluent.cloud"
+  basic.auth.user.info: "LIR4OEV7SFRYQY6F:3x+33B+xPqA3QjmZFHOFF+vsWkAXq0xaN0PaX8r25NJO75lIFKDIs0HjOp5eK2u0"
+
+# Telegram
+telegram:
+  api-token: "2068705569:AAE6nu9R1Hh8ov0L5Y-OPKW7gZy8xW3Dbh4"
+  chat-id: 1998294684
+
+topics:
+  readings: "houseplant-readings"
+  mappings: "houseplant-sensor-mapping"
+  houseplants: "houseplant-metadata"

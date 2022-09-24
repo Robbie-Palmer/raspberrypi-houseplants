@@ -9,11 +9,15 @@ kafka:
 
 # Confluent Cloud Schema Registry
 schema-registry:
-  schema.registry.url: [CC_SR_URL]
-  basic.auth.credentials.source: "USER_INFO"
+  url: [CC_SR_URL]
   basic.auth.user.info: [CC_SR_API_KEY]:[CC_SR_API_SECRET]
 
 # Telegram
 telegram:
   api-token: [TELEGRAM_TOKEN]
   chat-id: [CHAT_ID]
+
+topics:
+  readings: "houseplant-readings"
+  mappings: "houseplant-sensor-mapping"
+  houseplants: "houseplant-metadata"
