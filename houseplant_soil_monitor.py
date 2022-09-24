@@ -62,7 +62,7 @@ def produce_sensor_readings(producer, plant_addresses):
             ts = int(time.time())
             reading = avro_helper.Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
 
-            logger.info("Publishing message: key, value: ({},{})".format(str(plant_id), reading))
+            logger.info(f"Publishing message: key, value: ({plant_id},{reading})")
             producer.produce(config['topics']['readings'], key=plant_id, value=reading, timestamp=ts) 
         except Exception as e:
             logger.error("Got exception %s", e)
