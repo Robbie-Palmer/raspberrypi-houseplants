@@ -1,24 +1,6 @@
-#!/usr/bin/env python
-
-import logging
-import yaml
-import time
-import json
-import uuid
 import pprint
+from enum import IntEnum
 
-from telegram import __version__ as TG_VER
-try:
-    from telegram import __version_info__
-except ImportError:
-    __version_info__ = (0, 0, 0, 0, 0)  # type: ignore[assignment]
-
-if __version_info__ < (20, 0, 0, "alpha", 1):
-    raise RuntimeError(
-        f"This example is not compatible with your current PTB version {TG_VER}. To view the "
-        f"{TG_VER} version of this example, "
-        f"visit https://docs.python-telegram-bot.org/en/v{TG_VER}/examples.html"
-    )
 from telegram import ForceReply, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (   
     Application,
@@ -29,35 +11,28 @@ from telegram.ext import (
     filters
 )
 
-from confluent_kafka import SerializingProducer
-from confluent_kafka.serialization import StringSerializer
-from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.avro import AvroSerializer
+from helpers import avro,clients,logging
 
-import avro_helper
+logger = logging.set_logging('telegram_houseplant_bot')
+config = clients.config()
 
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+PLANT_STATE = IntEnum('PlantState', [
+    'ID',
+    'GIVEN',
+    'SCIENTIFIC',
+    'COMMON',
+    'TEMP_LOW',
+    'TEMP_HIGH',
+    'MOISTURE_LOW',
+    'MOISTURE_HIGH',
+    'COMMIT_PLANT'
+])
 
-def fetch_configs():
-    # fetches the configs from the available file
-    with open(CONFIGS_FILE, 'r') as config_file:
-        config = yaml.load(config_file, Loader=yaml.CLoader)
-
-        return config
-
-CONFIGS_FILE = './configs/configs.yaml'
-CONFIGS = fetch_configs()
-
-ID,GIVEN,SCIENTIFIC,COMMON,TEMP_LOW,TEMP_HIGH,MOISTURE_LOW,MOISTURE_HIGH,COMMIT_PLANT = range(9)
-SENSOR_ID,PLANT_ID,COMMIT_MAPPING = range(3)
-
-READINGS_TOPIC = 'houseplant-readings'
-METADATA_TOPIC = 'houseplant-metadata'
-MAPPING_TOPIC  = 'houseplant-sensor-mapping'
+MAPPING_STATE = IntEnum('MappingState', [
+    'SENSOR_ID',
+    'PLANT_ID',
+    'COMMIT_MAPPING'
+])
 
 
 ####################################################################################
@@ -67,85 +42,85 @@ MAPPING_TOPIC  = 'houseplant-sensor-mapping'
 ####################################################################################
 
 async def update_plant_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['plant'] = {}
         await update.message.reply_text(
             "Enter the plant id of the plant you'd like to update."
         )
 
-        return ID
+        return PLANT_STATE.ID
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 async def id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['plant']['plant_id'] = int(update.message.text)
 
         await update.message.reply_text(
                  "Please enter plant's given name."
              )
 
-        return GIVEN
+        return PLANT_STATE.GIVEN
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def given_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['plant']['given_name'] = update.message.text
 
         await update.message.reply_text(
                  "Please enter plant's scientific name."
              )
 
-        return SCIENTIFIC
+        return PLANT_STATE.SCIENTIFIC
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def scientific_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['plant']['scientific_name'] = update.message.text
 
         await update.message.reply_text(
                  "Please enter plant's common name."
              )
 
-        return COMMON
+        return PLANT_STATE.COMMON
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def common_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['plant']['common_name'] = update.message.text
 
         await update.message.reply_text(
                  "Please enter plant's low temperature threshold in C or /skip to use the default."
              )
 
-        return TEMP_LOW
+        return PLANT_STATE.TEMP_LOW
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def temp_low_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         # capture and store low temp data
         temp_low = update.message.text
         if temp_low != '/skip':
@@ -158,16 +133,16 @@ async def temp_low_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                  "Please enter plant's high temperature threshold in C or /skip to use the default."
              )
 
-        return TEMP_HIGH
+        return PLANT_STATE.TEMP_HIGH
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def temp_high_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         # capture and store high temp data
         temp_high = update.message.text
         if temp_high != '/skip':
@@ -180,16 +155,16 @@ async def temp_high_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                  "Please enter plant's low moisture threshold or /skip to use the default."
              )
 
-        return MOISTURE_LOW
+        return PLANT_STATE.MOISTURE_LOW
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def moisture_low_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         # capture and store high temp data
         moisture_low = update.message.text
         if moisture_low != '/skip':
@@ -202,16 +177,16 @@ async def moisture_low_command(update: Update, context: ContextTypes.DEFAULT_TYP
                  "Please enter plant's high moisture threshold or /skip to use the default."
              )
 
-        return MOISTURE_HIGH
+        return PLANT_STATE.MOISTURE_HIGH
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def moisture_high_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         # capture and store high temp data
         moisture_high = update.message.text
         if moisture_high != '/skip':
@@ -228,25 +203,24 @@ async def moisture_high_command(update: Update, context: ContextTypes.DEFAULT_TY
             "\nIs this correct? Reply /y to commmit the metadata entry or use /cancel to start over.", 
         )
 
-        return COMMIT_PLANT
+        return PLANT_STATE.COMMIT_PLANT
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def commit_plant_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
-        result = send_metadata(context.user_data['plant'])
+    if config['telegram']['chat-id'] == update.message.chat_id:
+        try:
+            send_metadata(context.user_data['plant'])
+            context.user_data['plant'].clear()
 
-        context.user_data['plant'].clear()
-        if result == 0:
             await update.message.reply_text(
                 "You've confirmed your metadata entry, and it has been updated. "
-                "Use /results see the results."
             )
-        else:
+        except Exception as e:
             await update.message.reply_text(
                 "Your metadata was not sent; please use /update_plant to re-try."
             )
@@ -254,45 +228,27 @@ async def commit_plant_command(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
     else:
         await update.message.reply_text(
-                "You are you authorized to use this application."
+                "You are not authorized to use this application."
             )
         return ConversationHandler.END
 
 
-def send_metadata(metadata): 
-    # 1. set up schema registry
-    sr_conf = {
-        'url': CONFIGS['schema-registry']['schema.registry.url'],
-        'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
-    }
-    schema_registry_client = SchemaRegistryClient(sr_conf)
-
-    # 2. set up metadata producer
-    avro_serializer = AvroSerializer(
-            schema_registry_client = schema_registry_client,
-            schema_str = avro_helper.houseplant_schema,
-            to_dict = avro_helper.Houseplant.houseplant_to_dict
-    )
-
-    producer_conf = CONFIGS['kafka']
-    producer_conf['value.serializer'] = avro_serializer
-    producer = SerializingProducer(producer_conf)
-
-    # 3. send metadata message
+def send_metadata(metadata):
+    # send metadata message
     try:
-        value = avro_helper.Houseplant.dict_to_houseplant(metadata)
+        # set up Kafka producer for houseplant metadata
+        producer = clients.producer(clients.houseplant_serializer())
+        value = avro.Houseplant.dict_to_houseplant(metadata)
 
         k = str(metadata.get('plant_id'))
-        logger.info('Publishing metadata message for key ' + str(k))
-        producer.produce(METADATA_TOPIC, key=k, value=value) 
+        logger.info("Publishing metadata message for key %s", k)
+        producer.produce(config['topics']['houseplants'], key=k, value=value) 
+    except Exception as e:
+        logger.error("Got exception %s", e)
+        raise e
+    finally:
         producer.poll()
         producer.flush()
-    except Exception as e:
-        print(str(e))
-        logger.error('Got exception ' + str(e))
-        return 1
-
-    return 0
 
 
 ####################################################################################
@@ -302,7 +258,7 @@ def send_metadata(metadata):
 ####################################################################################
 
 async def update_mapping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['mapping'] = {}
 
         reply_keyboard = [
@@ -319,16 +275,16 @@ async def update_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
             )
         )
 
-        return SENSOR_ID
+        return MAPPING_STATE.SENSOR_ID
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def sensor_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['mapping']['sensor_id'] = update.message.text
 
         await update.message.reply_text(
@@ -336,16 +292,16 @@ async def sensor_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             reply_markup=ReplyKeyboardRemove()
         )
 
-        return PLANT_ID
+        return MAPPING_STATE.PLANT_ID
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def plant_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
+    if config['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['mapping']['plant_id'] = int(update.message.text)
 
         # build up summary for confirmation
@@ -356,25 +312,24 @@ async def plant_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "\nIs this correct? Reply /y to commmit the mapping entry or use /cancel to start over.", 
         )
 
-        return COMMIT_MAPPING
+        return MAPPING_STATE.COMMIT_MAPPING
     else:
         await update.message.reply_text(
-            "You are you authorized to use this application."
+            "You are not authorized to use this application."
         )
         return ConversationHandler.END
 
 
 async def commit_mapping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
-        result = send_mapping(context.user_data['mapping'])
-        context.user_data['mapping'].clear()
+    if config['telegram']['chat-id'] == update.message.chat_id:
+        try:
+            send_mapping(context.user_data['mapping'])
+            context.user_data['mapping'].clear()
 
-        if result == 0:
             await update.message.reply_text(
                 "You've confirmed your mapping entry, and it has been updated. "
-                "Use /results see the results."
             )
-        else:
+        except Exception as e:
             await update.message.reply_text(
                 "Your mapping entry was not sent; please use /update_mapping to re-try."
             )
@@ -382,45 +337,27 @@ async def commit_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
         return ConversationHandler.END
     else:
         await update.message.reply_text(
-                "You are you authorized to use this application."
+                "You are not authorized to use this application."
             )
         return ConversationHandler.END
 
 
 def send_mapping(mapping): 
-    # 1. set up schema registry
-    sr_conf = {
-        'url': CONFIGS['schema-registry']['schema.registry.url'],
-        'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
-    }
-    schema_registry_client = SchemaRegistryClient(sr_conf)
-
-    # 2. set up metadata producer
-    avro_serializer = AvroSerializer(
-            schema_registry_client = schema_registry_client,
-            schema_str = avro_helper.mapping_schema,
-            to_dict = avro_helper.Mapping.mapping_to_dict
-    )
-
-    producer_conf = CONFIGS['kafka']
-    producer_conf['value.serializer'] = avro_serializer
-    producer = SerializingProducer(producer_conf)
-
-    # 3. send metadata message
+    # send mapping message
     try:
-        value = avro_helper.Mapping.dict_to_mapping(mapping)
+        # set up Kafka producer for mappings
+        producer = clients.producer(clients.mappings_serializer())
+        value = avro.Mapping.dict_to_mapping(mapping)
 
         k = str(mapping.get('sensor_id'))
-        logger.info('Publishing mapping message for key ' + str(k))
-        producer.produce(MAPPING_TOPIC, key=k, value=value) 
+        logger.info("Publishing mapping message for key %s", k)
+        producer.produce(config['topics']['mappings'], key=k, value=value) 
+    except Exception as e:
+        logger.error("Got exception %s", e)
+        raise e
+    finally:
         producer.poll()
         producer.flush()
-    except Exception as e:
-        print(str(e))
-        logger.error('Got exception ' + str(e))
-        return 1
-
-    return 0
 
 
 ####################################################################################
@@ -428,24 +365,6 @@ def send_mapping(mapping):
 #                                 OTHER HANDLERS                                   #
 #                                                                                  #
 ####################################################################################
-
-async def plants_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        f"Fetching houseplant metadata from Kafka..."
-    )
-
-
-async def latest_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        f"Fetching latest readings from Kafka..."
-    )
-
-
-async def mappings_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        f"Fetching latest sensor-plant mappings from Kafka..."
-    )
-
 
 async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
@@ -460,11 +379,8 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def post_init(application: Application) -> None:
     await application.bot.set_my_commands([
-        #('latest', 'See latest readings'),
-        #('plants', 'See all plants'),
-        ('update_plant', 'Update plant metadata'),
-        #('mappings', 'See sensor mappings'),
-        ('update_mapping', 'Update sensor-plant mapping')
+        ('update_plant', "Update plant metadata"),
+        ('update_mapping', "Update sensor-plant mapping")
         ])
 
 
@@ -472,66 +388,66 @@ async def post_init(application: Application) -> None:
 
 def main() -> None:
     # create the application and pass in bot token
-    application = Application.builder().token(CONFIGS['telegram']['api-token']).post_init(post_init).build()
+    application = Application.builder().token(config['telegram']['api-token']).post_init(post_init).build()
 
     # define conversation handlers
     update_plant_handler = ConversationHandler(
-        entry_points=[CommandHandler("update_plant", update_plant_command)],
+        entry_points=[CommandHandler('update_plant', update_plant_command)],
         states={
-            ID: [
+            PLANT_STATE.ID: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, id_command),
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            GIVEN: [
+            PLANT_STATE.GIVEN: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, given_command),
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            SCIENTIFIC: [
+            PLANT_STATE.SCIENTIFIC: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, scientific_command),
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            COMMON: [
+            PLANT_STATE.COMMON: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, common_command),
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            TEMP_LOW: [
+            PLANT_STATE.TEMP_LOW: [
                 MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), temp_low_command), 
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            TEMP_HIGH: [
+            PLANT_STATE.TEMP_HIGH: [
                 MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), temp_high_command), 
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            MOISTURE_LOW: [
+            PLANT_STATE.MOISTURE_LOW: [
                 MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), moisture_low_command), 
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            MOISTURE_HIGH: [
+            PLANT_STATE.MOISTURE_HIGH: [
                 MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), moisture_high_command), 
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            COMMIT_PLANT: [
-                CommandHandler("y", commit_plant_command), 
-                CommandHandler("n", cancel_command)
+            PLANT_STATE.COMMIT_PLANT: [
+                CommandHandler('y', commit_plant_command), 
+                CommandHandler('n', cancel_command)
             ]
         },
-        fallbacks=[CommandHandler("cancel", cancel_command)]
+        fallbacks=[CommandHandler('cancel', cancel_command)]
     )
 
     update_mapping_handler = ConversationHandler(
-        entry_points=[CommandHandler("update_mapping", update_mapping_command)],
+        entry_points=[CommandHandler('update_mapping', update_mapping_command)],
         states={
-            SENSOR_ID: [
+            MAPPING_STATE.SENSOR_ID: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, sensor_id_command),
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            PLANT_ID: [
+            MAPPING_STATE.PLANT_ID: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, plant_id_command),
-                CommandHandler("cancel", cancel_command)
+                CommandHandler('cancel', cancel_command)
             ],
-            COMMIT_MAPPING: [
-                CommandHandler("y", commit_mapping_command), 
-                CommandHandler("n", cancel_command)
+            MAPPING_STATE.COMMIT_MAPPING: [
+                CommandHandler('y', commit_mapping_command), 
+                CommandHandler('n', cancel_command)
             ]
         },
         fallbacks=[CommandHandler("cancel", cancel_command)]
@@ -540,13 +456,10 @@ def main() -> None:
     # add handlers
     application.add_handler(update_plant_handler)
     application.add_handler(update_mapping_handler)
-    #application.add_handler(CommandHandler("plants", plants_command))
-    #application.add_handler(CommandHandler("mappings", mappings_command))
-    #application.add_handler(CommandHandler("latest", latest_command))
 
     # run the bot application
     application.run_polling()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
