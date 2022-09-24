@@ -1,4 +1,4 @@
-configs/configs.yaml
+config/config.yaml
 __pycache__
 deprecated/
 *.log
