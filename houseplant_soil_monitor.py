@@ -7,12 +7,13 @@ from adafruit_seesaw.seesaw import Seesaw
 
 from confluent_kafka.error import SerializationError
 
-from helpers import avro,clients,logging
+from helpers import clients,logging
+from classes.reading import Reading
 
 TOUCH_HI = 1200
 TOUCH_LO = 600
 
-logger = logging.set_logging('soil_monitor')
+logger = logging.set_logging('houseplant_soil_monitor')
 config = clients.config()
 
 
@@ -41,7 +42,7 @@ def consume_sensor_mappings(consumer, plant_addresses):
 
 
 def produce_sensor_readings(producer, plant_addresses):
-    i2c_bus = busio.I2C(SCL, SDA)
+    #i2c_bus = busio.I2C(SCL, SDA)
     for address,plant_id in plant_addresses.items():
         try:
             ss = Seesaw(i2c_bus, addr=int(address, 16))
@@ -60,7 +61,7 @@ def produce_sensor_readings(producer, plant_addresses):
         
             # send data to Kafka
             ts = int(time.time())
-            reading = avro_helper.Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
+            reading = Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
 
             logger.info(f"Publishing message: key, value: ({plant_id},{reading})")
             producer.produce(config['topics']['readings'], key=plant_id, value=reading, timestamp=ts) 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
             plant_addresses = consume_sensor_mappings(consumer, plant_addresses)
 
             # capture readings from sensors
-            #produce_sensor_readings(producer, plant_addresses)
+            produce_sensor_readings(producer, plant_addresses)
 
             time.sleep(30)
     finally:

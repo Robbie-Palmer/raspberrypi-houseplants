@@ -11,7 +11,9 @@ from telegram.ext import (
     filters
 )
 
-from helpers import avro,clients,logging
+from helpers import clients,logging
+from classes.mapping import Mapping
+from classes.houseplant import Houseplant
 
 logger = logging.set_logging('telegram_houseplant_bot')
 config = clients.config()
@@ -238,7 +240,7 @@ def send_metadata(metadata):
     try:
         # set up Kafka producer for houseplant metadata
         producer = clients.producer(clients.houseplant_serializer())
-        value = avro.Houseplant.dict_to_houseplant(metadata)
+        value = Houseplant.dict_to_houseplant(metadata)
 
         k = str(metadata.get('plant_id'))
         logger.info("Publishing metadata message for key %s", k)
@@ -347,7 +349,7 @@ def send_mapping(mapping):
     try:
         # set up Kafka producer for mappings
         producer = clients.producer(clients.mappings_serializer())
-        value = avro.Mapping.dict_to_mapping(mapping)
+        value = Mapping.dict_to_mapping(mapping)
 
         k = str(mapping.get('sensor_id'))
         logger.info("Publishing mapping message for key %s", k)
