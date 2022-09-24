@@ -4,6 +4,8 @@ def get_schema(file):
 
 
 houseplant_schema = get_schema('./avro/houseplant.avsc')
+reading_schema    = get_schema('./avro/reading.avsc')
+mapping_schema    = get_schema('./avro/mapping.avsc')
 
 class Houseplant(object):
     """Houseplant stores the deserialized Avro record for the Kafka key."""
@@ -59,7 +61,6 @@ class Houseplant(object):
                     moisture_high    = self.moisture_high
                 )
 
-reading_schema = get_schema('./avro/reading.avsc')
 
 class Reading(object):
     """Reading stores the deserialized Avro record for the Kafka key."""
@@ -93,9 +94,6 @@ class Reading(object):
                     moisture    = self.moisture,
                     temperature = self.temperature
                 )
-
-
-mapping_schema = get_schema('./avro/mapping.avsc')
 
 
 class Mapping(object):
