@@ -37,7 +37,7 @@ SR_CLIENT = SchemaRegistryClient(SR_CONF)
 READINGS_SERIALIZER = AvroSerializer(
     schema_registry_client=SR_CLIENT,
     schema_str=Reading.schema,
-    to_dict=Reading.reading_to_dict
+    to_dict=lambda houseplant, ctx=None: houseplant.to_dict()
 )
 
 PRODUCER_CONF = CONFIGS['kafka'].copy()

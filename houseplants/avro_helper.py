@@ -67,10 +67,6 @@ class Reading:
             obj['temperature'],
         )
 
-    @staticmethod
-    def reading_to_dict(reading, ctx=None):
-        return reading.to_dict()
-
     def to_dict(self):
         return dict(
             plant_id=self.plant_id,
@@ -99,10 +95,6 @@ class Mapping:
             obj['sensor_id'],
             obj['plant_id']
         )
-
-    @staticmethod
-    def mapping_to_dict(mapping, ctx=None):
-        return mapping.to_dict()
 
     def to_dict(self):
         return dict(

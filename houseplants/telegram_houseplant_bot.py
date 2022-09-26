@@ -259,7 +259,7 @@ def send_metadata(metadata):
     avro_serializer = AvroSerializer(
         schema_registry_client=schema_registry_client,
         schema_str=Houseplant.schema,
-        to_dict=lambda houseplant, ctx=None: houseplant.to_dict()
+        to_dict=lambda reading, ctx=None: reading.to_dict()
     )
 
     producer_conf = CONFIGS['kafka']
@@ -387,7 +387,7 @@ def send_mapping(mapping):
     avro_serializer = AvroSerializer(
         schema_registry_client=schema_registry_client,
         schema_str=Mapping.schema,
-        to_dict=Mapping.mapping_to_dict
+        to_dict=lambda mapping, ctx=None: mapping.to_dict()
     )
 
     producer_conf = CONFIGS['kafka']
