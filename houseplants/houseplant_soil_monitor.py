@@ -48,7 +48,7 @@ PRODUCER = SerializingProducer(PRODUCER_CONF)
 MAPPINGS_DESERIALIZER = AvroDeserializer(
     schema_registry_client=SR_CLIENT,
     schema_str=Mapping.schema,
-    from_dict=Mapping.dict_to_mapping
+    from_dict=lambda obj: Mapping(**obj)
 )
 
 CONSUMER_CONF = CONFIGS['kafka'].copy()

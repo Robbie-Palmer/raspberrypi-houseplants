@@ -59,14 +59,6 @@ class Reading:
         self.moisture = moisture
         self.temperature = temperature
 
-    @staticmethod
-    def dict_to_reading(obj, ctx=None):
-        return Reading(
-            obj['plant_id'],
-            obj['moisture'],
-            obj['temperature'],
-        )
-
     def to_dict(self):
         return dict(
             plant_id=self.plant_id,
@@ -88,13 +80,6 @@ class Mapping:
     def __init__(self, sensor_id, plant_id):
         self.sensor_id = sensor_id
         self.plant_id = plant_id
-
-    @staticmethod
-    def dict_to_mapping(obj, ctx=None):
-        return Mapping(
-            obj['sensor_id'],
-            obj['plant_id']
-        )
 
     def to_dict(self):
         return dict(

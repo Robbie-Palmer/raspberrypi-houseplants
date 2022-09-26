@@ -396,7 +396,7 @@ def send_mapping(mapping):
 
     # 3. send metadata message
     try:
-        value = Mapping.dict_to_mapping(mapping)
+        value = Mapping(**mapping)
 
         k = str(mapping.get('sensor_id'))
         logger.info('Publishing mapping message for key ' + str(k))
