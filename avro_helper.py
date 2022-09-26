@@ -6,7 +6,7 @@ def get_schema(file):
 houseplant_schema = get_schema('./avro/houseplant.avsc')
 
 
-class Houseplant(object):
+class Houseplant:
     """Houseplant stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
@@ -47,7 +47,7 @@ class Houseplant(object):
 reading_schema = get_schema('./avro/reading.avsc')
 
 
-class Reading(object):
+class Reading:
     """Reading stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
@@ -84,7 +84,7 @@ class Reading(object):
 mapping_schema = get_schema('./avro/mapping.avsc')
 
 
-class Mapping(object):
+class Mapping:
     """Mapping stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
