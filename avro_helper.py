@@ -31,23 +31,6 @@ class Houseplant(object):
         self.moisture_low = moisture_low
         self.moisture_high = moisture_high
 
-    @staticmethod
-    def dict_to_houseplant(obj, ctx=None):
-        return Houseplant(
-            obj['plant_id'],
-            obj['scientific_name'],
-            obj['common_name'],
-            obj['given_name'],
-            obj['temperature_low'],
-            obj['temperature_high'],
-            obj['moisture_low'],
-            obj['moisture_high'],
-        )
-
-    @staticmethod
-    def houseplant_to_dict(houseplant, ctx=None):
-        return houseplant.to_dict()
-
     def to_dict(self):
         return dict(
             plant_id=self.plant_id,

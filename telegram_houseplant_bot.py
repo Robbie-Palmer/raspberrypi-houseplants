@@ -271,7 +271,7 @@ def send_metadata(metadata):
     avro_serializer = AvroSerializer(
         schema_registry_client=schema_registry_client,
         schema_str=avro_helper.houseplant_schema,
-        to_dict=avro_helper.Houseplant.houseplant_to_dict
+        to_dict=lambda houseplant, ctx=None: houseplant.to_dict()
     )
 
     producer_conf = CONFIGS['kafka']
@@ -280,7 +280,7 @@ def send_metadata(metadata):
 
     # 3. send metadata message
     try:
-        value = avro_helper.Houseplant.dict_to_houseplant(metadata)
+        value = avro_helper.Houseplant(**metadata)
 
         k = str(metadata.get('plant_id'))
         logger.info('Publishing metadata message for key ' + str(k))
