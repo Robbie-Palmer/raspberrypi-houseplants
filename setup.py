@@ -9,5 +9,5 @@ setup(
     packages=[package_name],
     description='A Houseplant Alerting System on Kafka on a Raspberry Pi',
     install_requires=requirements,
-    package_data={package_name: ['avro/*.avsc', 'configs/*', '*.sql', '*.json']}
+    package_data={package_name: ['avro/*.avsc', 'configs/*', '*.json']}
 )
