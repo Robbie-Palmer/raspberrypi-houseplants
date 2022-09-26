@@ -3,7 +3,7 @@ def get_schema(file):
         return handle.read()
 
 
-houseplant_schema = get_schema('./avro/houseplant.avsc')
+houseplant_schema = get_schema('avro/houseplant.avsc')
 
 
 class Houseplant:
@@ -44,7 +44,7 @@ class Houseplant:
         )
 
 
-reading_schema = get_schema('./avro/reading.avsc')
+reading_schema = get_schema('avro/reading.avsc')
 
 
 class Reading:
@@ -81,7 +81,7 @@ class Reading:
         )
 
 
-mapping_schema = get_schema('./avro/mapping.avsc')
+mapping_schema = get_schema('avro/mapping.avsc')
 
 
 class Mapping:

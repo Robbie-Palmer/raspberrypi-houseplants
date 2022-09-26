@@ -8,4 +8,4 @@ Checkout my [blog-post](https://www.confluent.io/blog/using-data-pipelines-for-r
 - Install [Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
 - Create a new python environment `conda create -n houseplants python=3.9`
 - Active your environment `conda activate houseplants`
-- Install the requirements `pip install -r requirements.txt`
+- Install the app in editable mode `pip install -e .`

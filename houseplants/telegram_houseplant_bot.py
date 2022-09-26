@@ -31,7 +31,7 @@ from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
-import avro_helper
+from houseplants import avro_helper
 
 # Enable logging
 logging.basicConfig(
