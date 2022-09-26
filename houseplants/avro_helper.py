@@ -3,9 +3,6 @@ def get_schema(file):
         return handle.read()
 
 
-houseplant_schema = get_schema('avro/houseplant.avsc')
-
-
 class Houseplant:
     """Houseplant stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
@@ -19,6 +16,8 @@ class Houseplant:
         "moisture_low",
         "moisture_high"
     ]
+
+    schema = get_schema('avro/houseplant.avsc')
 
     def __init__(self, plant_id, scientific_name, common_name, given_name,
                  temperature_low, temperature_high, moisture_low, moisture_high):
@@ -44,9 +43,6 @@ class Houseplant:
         )
 
 
-reading_schema = get_schema('avro/reading.avsc')
-
-
 class Reading:
     """Reading stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
@@ -55,6 +51,8 @@ class Reading:
         "moisture",
         "temperature"
     ]
+
+    schema = get_schema('avro/reading.avsc')
 
     def __init__(self, plant_id, moisture, temperature):
         self.plant_id = plant_id
@@ -81,9 +79,6 @@ class Reading:
         )
 
 
-mapping_schema = get_schema('avro/mapping.avsc')
-
-
 class Mapping:
     """Mapping stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
@@ -91,6 +86,8 @@ class Mapping:
         "sensor_id",
         "plant_id"
     ]
+
+    schema = get_schema('avro/mapping.avsc')
 
     def __init__(self, sensor_id, plant_id):
         self.sensor_id = sensor_id

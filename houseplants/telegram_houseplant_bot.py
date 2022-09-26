@@ -30,7 +30,8 @@ from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
-from houseplants import avro_helper, CONFIGS
+from houseplants import CONFIGS
+from houseplants.avro_helper import Houseplant, Mapping
 
 # Enable logging
 logging.basicConfig(
@@ -257,7 +258,7 @@ def send_metadata(metadata):
     # 2. set up metadata producer
     avro_serializer = AvroSerializer(
         schema_registry_client=schema_registry_client,
-        schema_str=avro_helper.houseplant_schema,
+        schema_str=Houseplant.schema,
         to_dict=lambda houseplant, ctx=None: houseplant.to_dict()
     )
 
@@ -267,7 +268,7 @@ def send_metadata(metadata):
 
     # 3. send metadata message
     try:
-        value = avro_helper.Houseplant(**metadata)
+        value = Houseplant(**metadata)
 
         k = str(metadata.get('plant_id'))
         logger.info('Publishing metadata message for key ' + str(k))
@@ -385,8 +386,8 @@ def send_mapping(mapping):
     # 2. set up metadata producer
     avro_serializer = AvroSerializer(
         schema_registry_client=schema_registry_client,
-        schema_str=avro_helper.mapping_schema,
-        to_dict=avro_helper.Mapping.mapping_to_dict
+        schema_str=Mapping.schema,
+        to_dict=Mapping.mapping_to_dict
     )
 
     producer_conf = CONFIGS['kafka']
@@ -395,7 +396,7 @@ def send_mapping(mapping):
 
     # 3. send metadata message
     try:
-        value = avro_helper.Mapping.dict_to_mapping(mapping)
+        value = Mapping.dict_to_mapping(mapping)
 
         k = str(mapping.get('sensor_id'))
         logger.info('Publishing mapping message for key ' + str(k))

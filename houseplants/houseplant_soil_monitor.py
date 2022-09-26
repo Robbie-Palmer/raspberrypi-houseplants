@@ -9,8 +9,8 @@ from confluent_kafka.error import SerializationError
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
 
-import avro_helper
 from houseplants import CONFIGS
+from houseplants.avro_helper import Reading, Mapping
 
 # set up logging
 logger = logging.getLogger('soil_monitor')
@@ -36,8 +36,8 @@ SR_CLIENT = SchemaRegistryClient(SR_CONF)
 # set up Kafka producer
 READINGS_SERIALIZER = AvroSerializer(
     schema_registry_client=SR_CLIENT,
-    schema_str=avro_helper.reading_schema,
-    to_dict=avro_helper.Reading.reading_to_dict
+    schema_str=Reading.schema,
+    to_dict=Reading.reading_to_dict
 )
 
 PRODUCER_CONF = CONFIGS['kafka'].copy()
@@ -47,8 +47,8 @@ PRODUCER = SerializingProducer(PRODUCER_CONF)
 # set up Kafka Consumer details
 MAPPINGS_DESERIALIZER = AvroDeserializer(
     schema_registry_client=SR_CLIENT,
-    schema_str=avro_helper.mapping_schema,
-    from_dict=avro_helper.Mapping.dict_to_mapping
+    schema_str=Mapping.schema,
+    from_dict=Mapping.dict_to_mapping
 )
 
 CONSUMER_CONF = CONFIGS['kafka'].copy()
@@ -104,7 +104,7 @@ def produce_sensor_readings():
 
             # send data to Kafka
             ts = int(time.time())
-            reading = avro_helper.Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
+            reading = Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
 
             logger.info("Publishing message: key, value: ({},{})".format(str(plant_id), reading))
             PRODUCER.produce(READINGS_TOPIC, key=plant_id, value=reading, timestamp=ts)
