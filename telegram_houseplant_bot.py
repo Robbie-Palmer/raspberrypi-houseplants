@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
 import logging
-import yaml
-import time
-import json
-import uuid
 import pprint
 
+import yaml
 from telegram import __version__ as TG_VER
+
 try:
     from telegram import __version_info__
 except ImportError:
@@ -19,8 +17,8 @@ if __version_info__ < (20, 0, 0, "alpha", 1):
         f"{TG_VER} version of this example, "
         f"visit https://docs.python-telegram-bot.org/en/v{TG_VER}/examples.html"
     )
-from telegram import ForceReply, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import (   
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import (
     Application,
     CommandHandler,
     ContextTypes,
@@ -30,7 +28,6 @@ from telegram.ext import (
 )
 
 from confluent_kafka import SerializingProducer
-from confluent_kafka.serialization import StringSerializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
@@ -42,6 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 def fetch_configs():
     # fetches the configs from the available file
     with open(CONFIGS_FILE, 'r') as config_file:
@@ -49,15 +47,16 @@ def fetch_configs():
 
         return config
 
+
 CONFIGS_FILE = './configs/configs.yaml'
 CONFIGS = fetch_configs()
 
-ID,GIVEN,SCIENTIFIC,COMMON,TEMP_LOW,TEMP_HIGH,MOISTURE_LOW,MOISTURE_HIGH,COMMIT_PLANT = range(9)
-SENSOR_ID,PLANT_ID,COMMIT_MAPPING = range(3)
+ID, GIVEN, SCIENTIFIC, COMMON, TEMP_LOW, TEMP_HIGH, MOISTURE_LOW, MOISTURE_HIGH, COMMIT_PLANT = range(9)
+SENSOR_ID, PLANT_ID, COMMIT_MAPPING = range(3)
 
 READINGS_TOPIC = 'houseplant-readings'
 METADATA_TOPIC = 'houseplant-metadata'
-MAPPING_TOPIC  = 'houseplant-sensor-mapping'
+MAPPING_TOPIC = 'houseplant-sensor-mapping'
 
 
 ####################################################################################
@@ -80,13 +79,14 @@ async def update_plant_command(update: Update, context: ContextTypes.DEFAULT_TYP
         )
         return ConversationHandler.END
 
+
 async def id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if CONFIGS['telegram']['chat-id'] == update.message.chat_id:
         context.user_data['plant']['plant_id'] = int(update.message.text)
 
         await update.message.reply_text(
-                 "Please enter plant's given name."
-             )
+            "Please enter plant's given name."
+        )
 
         return GIVEN
     else:
@@ -101,8 +101,8 @@ async def given_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         context.user_data['plant']['given_name'] = update.message.text
 
         await update.message.reply_text(
-                 "Please enter plant's scientific name."
-             )
+            "Please enter plant's scientific name."
+        )
 
         return SCIENTIFIC
     else:
@@ -117,8 +117,8 @@ async def scientific_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data['plant']['scientific_name'] = update.message.text
 
         await update.message.reply_text(
-                 "Please enter plant's common name."
-             )
+            "Please enter plant's common name."
+        )
 
         return COMMON
     else:
@@ -133,8 +133,8 @@ async def common_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         context.user_data['plant']['common_name'] = update.message.text
 
         await update.message.reply_text(
-                 "Please enter plant's low temperature threshold in C or /skip to use the default."
-             )
+            "Please enter plant's low temperature threshold in C or /skip to use the default."
+        )
 
         return TEMP_LOW
     else:
@@ -155,8 +155,8 @@ async def temp_low_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             context.user_data['plant']['temperature_low'] = 40
 
         await update.message.reply_text(
-                 "Please enter plant's high temperature threshold in C or /skip to use the default."
-             )
+            "Please enter plant's high temperature threshold in C or /skip to use the default."
+        )
 
         return TEMP_HIGH
     else:
@@ -177,8 +177,8 @@ async def temp_high_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             context.user_data['plant']['temperature_high'] = 100
 
         await update.message.reply_text(
-                 "Please enter plant's low moisture threshold or /skip to use the default."
-             )
+            "Please enter plant's low moisture threshold or /skip to use the default."
+        )
 
         return MOISTURE_LOW
     else:
@@ -199,8 +199,8 @@ async def moisture_low_command(update: Update, context: ContextTypes.DEFAULT_TYP
             context.user_data['plant']['moisture_low'] = 25
 
         await update.message.reply_text(
-                 "Please enter plant's high moisture threshold or /skip to use the default."
-             )
+            "Please enter plant's high moisture threshold or /skip to use the default."
+        )
 
         return MOISTURE_HIGH
     else:
@@ -225,7 +225,7 @@ async def moisture_high_command(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(
             "Please confirm your metadata entry.\n\n"
             f"{summary}"
-            "\nIs this correct? Reply /y to commmit the metadata entry or use /cancel to start over.", 
+            "\nIs this correct? Reply /y to commmit the metadata entry or use /cancel to start over.",
         )
 
         return COMMIT_PLANT
@@ -254,12 +254,12 @@ async def commit_plant_command(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
     else:
         await update.message.reply_text(
-                "You are you authorized to use this application."
-            )
+            "You are you authorized to use this application."
+        )
         return ConversationHandler.END
 
 
-def send_metadata(metadata): 
+def send_metadata(metadata):
     # 1. set up schema registry
     sr_conf = {
         'url': CONFIGS['schema-registry']['schema.registry.url'],
@@ -269,9 +269,9 @@ def send_metadata(metadata):
 
     # 2. set up metadata producer
     avro_serializer = AvroSerializer(
-            schema_registry_client = schema_registry_client,
-            schema_str = avro_helper.houseplant_schema,
-            to_dict = avro_helper.Houseplant.houseplant_to_dict
+        schema_registry_client=schema_registry_client,
+        schema_str=avro_helper.houseplant_schema,
+        to_dict=avro_helper.Houseplant.houseplant_to_dict
     )
 
     producer_conf = CONFIGS['kafka']
@@ -284,7 +284,7 @@ def send_metadata(metadata):
 
         k = str(metadata.get('plant_id'))
         logger.info('Publishing metadata message for key ' + str(k))
-        producer.produce(METADATA_TOPIC, key=k, value=value) 
+        producer.produce(METADATA_TOPIC, key=k, value=value)
         producer.poll()
         producer.flush()
     except Exception as e:
@@ -306,9 +306,9 @@ async def update_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
         context.user_data['mapping'] = {}
 
         reply_keyboard = [
-            ["0x36"], 
-            ["0x37"], 
-            ["0x38"], 
+            ["0x36"],
+            ["0x37"],
+            ["0x38"],
             ["0x39"]
         ]
 
@@ -332,7 +332,7 @@ async def sensor_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         context.user_data['mapping']['sensor_id'] = update.message.text
 
         await update.message.reply_text(
-            f"Please enter the plant id you'd like to map to {update.message.text}.", 
+            f"Please enter the plant id you'd like to map to {update.message.text}.",
             reply_markup=ReplyKeyboardRemove()
         )
 
@@ -353,7 +353,7 @@ async def plant_id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text(
             "Please confirm your mapping entry.\n\n"
             f"{summary}"
-            "\nIs this correct? Reply /y to commmit the mapping entry or use /cancel to start over.", 
+            "\nIs this correct? Reply /y to commmit the mapping entry or use /cancel to start over.",
         )
 
         return COMMIT_MAPPING
@@ -382,12 +382,12 @@ async def commit_mapping_command(update: Update, context: ContextTypes.DEFAULT_T
         return ConversationHandler.END
     else:
         await update.message.reply_text(
-                "You are you authorized to use this application."
-            )
+            "You are you authorized to use this application."
+        )
         return ConversationHandler.END
 
 
-def send_mapping(mapping): 
+def send_mapping(mapping):
     # 1. set up schema registry
     sr_conf = {
         'url': CONFIGS['schema-registry']['schema.registry.url'],
@@ -397,9 +397,9 @@ def send_mapping(mapping):
 
     # 2. set up metadata producer
     avro_serializer = AvroSerializer(
-            schema_registry_client = schema_registry_client,
-            schema_str = avro_helper.mapping_schema,
-            to_dict = avro_helper.Mapping.mapping_to_dict
+        schema_registry_client=schema_registry_client,
+        schema_str=avro_helper.mapping_schema,
+        to_dict=avro_helper.Mapping.mapping_to_dict
     )
 
     producer_conf = CONFIGS['kafka']
@@ -412,7 +412,7 @@ def send_mapping(mapping):
 
         k = str(mapping.get('sensor_id'))
         logger.info('Publishing mapping message for key ' + str(k))
-        producer.produce(MAPPING_TOPIC, key=k, value=value) 
+        producer.produce(MAPPING_TOPIC, key=k, value=value)
         producer.poll()
         producer.flush()
     except Exception as e:
@@ -460,12 +460,12 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def post_init(application: Application) -> None:
     await application.bot.set_my_commands([
-        #('latest', 'See latest readings'),
-        #('plants', 'See all plants'),
+        # ('latest', 'See latest readings'),
+        # ('plants', 'See all plants'),
         ('update_plant', 'Update plant metadata'),
-        #('mappings', 'See sensor mappings'),
+        # ('mappings', 'See sensor mappings'),
         ('update_mapping', 'Update sensor-plant mapping')
-        ])
+    ])
 
 
 ####################################################################################
@@ -495,23 +495,23 @@ def main() -> None:
                 CommandHandler("cancel", cancel_command)
             ],
             TEMP_LOW: [
-                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), temp_low_command), 
+                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), temp_low_command),
                 CommandHandler("cancel", cancel_command)
             ],
             TEMP_HIGH: [
-                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), temp_high_command), 
+                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), temp_high_command),
                 CommandHandler("cancel", cancel_command)
             ],
             MOISTURE_LOW: [
-                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), moisture_low_command), 
+                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), moisture_low_command),
                 CommandHandler("cancel", cancel_command)
             ],
             MOISTURE_HIGH: [
-                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), moisture_high_command), 
+                MessageHandler(filters.TEXT & (~filters.COMMAND | filters.Regex("^\/skip$")), moisture_high_command),
                 CommandHandler("cancel", cancel_command)
             ],
             COMMIT_PLANT: [
-                CommandHandler("y", commit_plant_command), 
+                CommandHandler("y", commit_plant_command),
                 CommandHandler("n", cancel_command)
             ]
         },
@@ -530,7 +530,7 @@ def main() -> None:
                 CommandHandler("cancel", cancel_command)
             ],
             COMMIT_MAPPING: [
-                CommandHandler("y", commit_mapping_command), 
+                CommandHandler("y", commit_mapping_command),
                 CommandHandler("n", cancel_command)
             ]
         },
@@ -540,9 +540,9 @@ def main() -> None:
     # add handlers
     application.add_handler(update_plant_handler)
     application.add_handler(update_mapping_handler)
-    #application.add_handler(CommandHandler("plants", plants_command))
-    #application.add_handler(CommandHandler("mappings", mappings_command))
-    #application.add_handler(CommandHandler("latest", latest_command))
+    # application.add_handler(CommandHandler("plants", plants_command))
+    # application.add_handler(CommandHandler("mappings", mappings_command))
+    # application.add_handler(CommandHandler("latest", latest_command))
 
     # run the bot application
     application.run_polling()

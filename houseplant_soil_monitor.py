@@ -1,5 +1,4 @@
 import time
-import json
 import logging
 import yaml
 
@@ -7,7 +6,6 @@ from board import SCL, SDA
 import busio
 from confluent_kafka import SerializingProducer, DeserializingConsumer
 from confluent_kafka.error import SerializationError
-from confluent_kafka.serialization import StringSerializer, StringDeserializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
 
@@ -37,16 +35,16 @@ with open(CONFIGS_FILE, 'r') as config_file:
 
 # set up schema registry
 SR_CONF = {
-        'url': CONFIGS['schema-registry']['schema.registry.url'],
-        'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
+    'url': CONFIGS['schema-registry']['schema.registry.url'],
+    'basic.auth.user.info': CONFIGS['schema-registry']['basic.auth.user.info']
 }
 SR_CLIENT = SchemaRegistryClient(SR_CONF)
 
 # set up Kafka producer
 READINGS_SERIALIZER = AvroSerializer(
-        schema_registry_client = SR_CLIENT,
-        schema_str = avro_helper.reading_schema,
-        to_dict = avro_helper.Reading.reading_to_dict
+    schema_registry_client=SR_CLIENT,
+    schema_str=avro_helper.reading_schema,
+    to_dict=avro_helper.Reading.reading_to_dict
 )
 
 PRODUCER_CONF = CONFIGS['kafka'].copy()
@@ -55,9 +53,9 @@ PRODUCER = SerializingProducer(PRODUCER_CONF)
 
 # set up Kafka Consumer details
 MAPPINGS_DESERIALIZER = AvroDeserializer(
-        schema_registry_client = SR_CLIENT,
-        schema_str = avro_helper.mapping_schema,
-        from_dict = avro_helper.Mapping.dict_to_mapping
+    schema_registry_client=SR_CLIENT,
+    schema_str=avro_helper.mapping_schema,
+    from_dict=avro_helper.Mapping.dict_to_mapping
 )
 
 CONSUMER_CONF = CONFIGS['kafka'].copy()
@@ -69,6 +67,7 @@ CONSUMER = DeserializingConsumer(CONSUMER_CONF)
 CONSUMER.subscribe([MAPPINGS_TOPIC])
 
 PLANT_ADDRESSES = {}
+
 
 def consume_sensor_mappings():
     # loop until there aren't any messages
@@ -94,7 +93,7 @@ def consume_sensor_mappings():
 
 def produce_sensor_readings():
     i2c_bus = busio.I2C(SCL, SDA)
-    for address,plant_id in PLANT_ADDRESSES.items():
+    for address, plant_id in PLANT_ADDRESSES.items():
         try:
             ss = Seesaw(i2c_bus, addr=int(address, 16))
 
@@ -109,13 +108,13 @@ def produce_sensor_readings():
 
             # read temperature
             temp = ss.get_temp()
-        
+
             # send data to Kafka
             ts = int(time.time())
             reading = avro_helper.Reading(int(plant_id), round(touch_percent, 3), round(temp, 3))
 
             logger.info("Publishing message: key, value: ({},{})".format(str(plant_id), reading))
-            PRODUCER.produce(READINGS_TOPIC, key=plant_id, value=reading, timestamp=ts) 
+            PRODUCER.produce(READINGS_TOPIC, key=plant_id, value=reading, timestamp=ts)
             PRODUCER.poll()
 
         except Exception as e:

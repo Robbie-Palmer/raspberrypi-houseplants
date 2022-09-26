@@ -5,11 +5,12 @@ def get_schema(file):
 
 houseplant_schema = get_schema('./avro/houseplant.avsc')
 
+
 class Houseplant(object):
     """Houseplant stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
-        "plant_id", 
+        "plant_id",
         "scientific_name",
         "common_name",
         "given_name",
@@ -18,30 +19,30 @@ class Houseplant(object):
         "moisture_low",
         "moisture_high"
     ]
-    
-    def __init__(self, plant_id, scientific_name, common_name, given_name, 
-                       temperature_low, temperature_high, moisture_low, moisture_high):
-        self.plant_id         = plant_id
-        self.scientific_name  = scientific_name
-        self.common_name      = common_name
-        self.given_name       = given_name
-        self.temperature_low  = temperature_low
+
+    def __init__(self, plant_id, scientific_name, common_name, given_name,
+                 temperature_low, temperature_high, moisture_low, moisture_high):
+        self.plant_id = plant_id
+        self.scientific_name = scientific_name
+        self.common_name = common_name
+        self.given_name = given_name
+        self.temperature_low = temperature_low
         self.temperature_high = temperature_high
-        self.moisture_low     = moisture_low
-        self.moisture_high    = moisture_high
+        self.moisture_low = moisture_low
+        self.moisture_high = moisture_high
 
     @staticmethod
     def dict_to_houseplant(obj, ctx=None):
         return Houseplant(
-                obj['plant_id'],
-                obj['scientific_name'],
-                obj['common_name'],    
-                obj['given_name'],    
-                obj['temperature_low'],    
-                obj['temperature_high'],    
-                obj['moisture_low'],    
-                obj['moisture_high'],    
-            )
+            obj['plant_id'],
+            obj['scientific_name'],
+            obj['common_name'],
+            obj['given_name'],
+            obj['temperature_low'],
+            obj['temperature_high'],
+            obj['moisture_low'],
+            obj['moisture_high'],
+        )
 
     @staticmethod
     def houseplant_to_dict(houseplant, ctx=None):
@@ -49,39 +50,41 @@ class Houseplant(object):
 
     def to_dict(self):
         return dict(
-                    plant_id         = self.plant_id, 
-                    scientific_name  = self.scientific_name,
-                    common_name      = self.common_name,
-                    given_name       = self.given_name,
-                    temperature_low  = self.temperature_low,
-                    temperature_high = self.temperature_high,
-                    moisture_low     = self.moisture_low,
-                    moisture_high    = self.moisture_high
-                )
+            plant_id=self.plant_id,
+            scientific_name=self.scientific_name,
+            common_name=self.common_name,
+            given_name=self.given_name,
+            temperature_low=self.temperature_low,
+            temperature_high=self.temperature_high,
+            moisture_low=self.moisture_low,
+            moisture_high=self.moisture_high
+        )
+
 
 reading_schema = get_schema('./avro/reading.avsc')
+
 
 class Reading(object):
     """Reading stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
-        "plant_id", 
+        "plant_id",
         "moisture",
         "temperature"
     ]
-    
+
     def __init__(self, plant_id, moisture, temperature):
-        self.plant_id    = plant_id
-        self.moisture    = moisture
+        self.plant_id = plant_id
+        self.moisture = moisture
         self.temperature = temperature
 
     @staticmethod
     def dict_to_reading(obj, ctx=None):
         return Reading(
-                obj['plant_id'],
-                obj['moisture'],    
-                obj['temperature'],    
-            )
+            obj['plant_id'],
+            obj['moisture'],
+            obj['temperature'],
+        )
 
     @staticmethod
     def reading_to_dict(reading, ctx=None):
@@ -89,10 +92,10 @@ class Reading(object):
 
     def to_dict(self):
         return dict(
-                    plant_id    = self.plant_id,
-                    moisture    = self.moisture,
-                    temperature = self.temperature
-                )
+            plant_id=self.plant_id,
+            moisture=self.moisture,
+            temperature=self.temperature
+        )
 
 
 mapping_schema = get_schema('./avro/mapping.avsc')
@@ -102,20 +105,20 @@ class Mapping(object):
     """Mapping stores the deserialized Avro record for the Kafka key."""
     # Use __slots__ to explicitly declare all data members.
     __slots__ = [
-        "sensor_id", 
+        "sensor_id",
         "plant_id"
     ]
-    
+
     def __init__(self, sensor_id, plant_id):
         self.sensor_id = sensor_id
-        self.plant_id  = plant_id
+        self.plant_id = plant_id
 
     @staticmethod
     def dict_to_mapping(obj, ctx=None):
         return Mapping(
-                obj['sensor_id'],
-                obj['plant_id']   
-            )
+            obj['sensor_id'],
+            obj['plant_id']
+        )
 
     @staticmethod
     def mapping_to_dict(mapping, ctx=None):
@@ -123,7 +126,6 @@ class Mapping(object):
 
     def to_dict(self):
         return dict(
-                    sensor_id = self.sensor_id,
-                    plant_id  = self.plant_id
-                )
-
+            sensor_id=self.sensor_id,
+            plant_id=self.plant_id
+        )
