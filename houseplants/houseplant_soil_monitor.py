@@ -1,17 +1,16 @@
-import time
 import logging
-import yaml
+import time
 
-from board import SCL, SDA
 import busio
+from adafruit_seesaw.seesaw import Seesaw
+from board import SCL, SDA
 from confluent_kafka import SerializingProducer, DeserializingConsumer
 from confluent_kafka.error import SerializationError
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
 
-from adafruit_seesaw.seesaw import Seesaw
-
 import avro_helper
+from houseplants import CONFIGS
 
 # set up logging
 logger = logging.getLogger('soil_monitor')
@@ -26,12 +25,6 @@ TOUCH_LO = 600
 
 READINGS_TOPIC = 'houseplant-readings'
 MAPPINGS_TOPIC = 'houseplant-sensor-mapping'
-
-# fetches the configs from the available file
-CONFIGS_FILE = './configs/configs.yaml'
-CONFIGS = {}
-with open(CONFIGS_FILE, 'r') as config_file:
-    CONFIGS = yaml.load(config_file, Loader=yaml.CLoader)
 
 # set up schema registry
 SR_CONF = {

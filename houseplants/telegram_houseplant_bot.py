@@ -3,7 +3,6 @@
 import logging
 import pprint
 
-import yaml
 from telegram import __version__ as TG_VER
 
 try:
@@ -31,25 +30,13 @@ from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
-from houseplants import avro_helper
+from houseplants import avro_helper, CONFIGS
 
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-
-def fetch_configs():
-    # fetches the configs from the available file
-    with open(CONFIGS_FILE, 'r') as config_file:
-        config = yaml.load(config_file, Loader=yaml.CLoader)
-
-        return config
-
-
-CONFIGS_FILE = './configs/configs.yaml'
-CONFIGS = fetch_configs()
 
 ID, GIVEN, SCIENTIFIC, COMMON, TEMP_LOW, TEMP_HIGH, MOISTURE_LOW, MOISTURE_HIGH, COMMIT_PLANT = range(9)
 SENSOR_ID, PLANT_ID, COMMIT_MAPPING = range(3)
